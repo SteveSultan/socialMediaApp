@@ -1,6 +1,6 @@
 /**
  * Steve Sultan
- * SteveSultan@outlook.com
+ * 
  */
 const functions = require("firebase-functions");
 const admin = require('firebase-admin');
@@ -50,7 +50,7 @@ app.get('/screams', (req, res) => {
 //authentication middleware
 const FBAuth = (req, res, next) => {
     let idToken  //id token var.
-    if (req.headers.authorization && req.headers.authorization.startWith('Bearer ')) {
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
         idToken = req.headers.authorization.split('Bearer ')[1];
     } else {
         console.error('No token found')
@@ -80,6 +80,10 @@ const FBAuth = (req, res, next) => {
 
 //post a new scream route
 app.post('/scream', FBAuth, (req, res) => {
+    if (req.body.body.trim() === '') {
+        return res.status(400).json({ body: 'Body must not be empty' })
+    }
+
     const newScream = {
         body: req.body.body,
         userHandle: req.body.userHandle,
