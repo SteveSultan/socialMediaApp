@@ -47,8 +47,39 @@ app.get('/screams', (req, res) => {
     .catch(err => console.error(err));
 })
 
-//create new scream route
-app.post('/scream', (req, res) => {
+//authentication middleware
+const FBAuth = (req, res, next) => {
+    let idToken  //id token var.
+    if (req.headers.authorization && req.headers.authorization.startWith('Bearer ')) {
+        idToken = req.headers.authorization.split('Bearer ')[1];
+    } else {
+        console.error('No token found')
+        return res.status(403).json({ error: 'Unauthorized'})
+    }
+
+    //To verify that, if this token issue by our application
+    admin.auth().verifyIdToken(idToken)
+        .then(decodedToken => {
+            req.user = decodedToken;
+            console.log(decodedToken);
+    //do database request to get user collection from firebase
+            return db.collection('users')
+            .where('userId', '==', req.user.uid) 
+            .limit(1) //limit result to one document
+            .get();
+        })
+        .then(data => {
+            req.user.handle = data.docs[0].data().handle; //take the first element from doc handle
+            return next();
+        })
+        .catch(err => {
+            console.error('Error while verifying token', err);
+            return res.status(403).json(err);
+        })
+}
+
+//post a new scream route
+app.post('/scream', FBAuth, (req, res) => {
     const newScream = {
         body: req.body.body,
         userHandle: req.body.userHandle,
